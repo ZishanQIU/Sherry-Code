@@ -1,0 +1,531 @@
+unsigned long currentMillis;
+unsigned long previousMillis = 0;
+//movement
+int E1 = 5;     //M1 Speed Control
+int E2 = 6;     //M2 Speed Control
+int M1 = 4;    //M1 Direction Control
+int M2 = 7;    //M1 Direction Control
+
+#include <Servo.h>
+Servo myservo;  // create servo object to control a servo
+Servo myservo2;  // create servo object to control a servo
+Servo myservo3;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+
+int pos = 0;    // variable to store the servo position
+
+#include <FastLED.h>
+FASTLED_USING_NAMESPACE
+#if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
+#warning "Requires FastLED 3.1 or later; check github for latest code."
+#endif
+
+// How many leds in your strip?
+#define NUM_LEDS 64
+
+// For led chips like WS2812, which have a data line, ground, and power, you just
+// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
+// ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
+// Clock pin only needed for SPI based chipsets when not using hardware SPI
+#define DATA_PIN 9
+#define CLOCK_PIN 13
+
+// Define the array of leds
+CRGB leds[NUM_LEDS];
+
+#define LED_TYPE    WS2811
+#define COLOR_ORDER GRB
+
+
+#define BRIGHTNESS          96
+#define FRAMES_PER_SECOND  120
+
+void setup() {
+  //delay(3000); // 3 second delay for recovery
+  Serial.begin(9600);
+  Serial.println("Hello");
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+
+  // set master brightness control
+  FastLED.setBrightness(BRIGHTNESS);
+    int i;
+  for (i = 4; i <= 7; i++)
+    pinMode(i, OUTPUT);
+  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);  // GRB ordering is assumed
+}
+
+
+typedef void (*SimplePatternList[])();
+SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
+
+uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+  
+#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+
+void nextPattern()
+{
+  // add one to the current pattern number, and wrap around at the end
+  gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
+}
+
+void rainbow() 
+{
+  // FastLED's built-in rainbow generator
+  fill_rainbow( leds, NUM_LEDS, gHue, 7);
+}
+
+void rainbowWithGlitter() 
+{
+  // built-in FastLED rainbow, plus some random sparkly glitter
+  rainbow();
+  addGlitter(80);
+}
+
+void addGlitter( fract8 chanceOfGlitter) 
+{
+  if( random8() < chanceOfGlitter) {
+    leds[ random16(NUM_LEDS) ] += CRGB::White;
+  }
+}
+
+void confetti() 
+{
+  // random colored speckles that blink in and fade smoothly
+  fadeToBlackBy( leds, NUM_LEDS, 10);
+  int pos = random16(NUM_LEDS);
+  leds[pos] += CHSV( gHue + random8(64), 200, 255);
+}
+
+void sinelon()
+{
+  // a colored dot sweeping back and forth, with fading trails
+  fadeToBlackBy( leds, NUM_LEDS, 20);
+  int pos = beatsin16( 13, 0, NUM_LEDS-1 );
+  leds[pos] += CHSV( gHue, 255, 192);
+}
+
+void bpm()
+{
+  // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+  uint8_t BeatsPerMinute = 62;
+  CRGBPalette16 palette = PartyColors_p;
+  uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
+  for( int i = 0; i < NUM_LEDS; i++) { //9948
+    leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+  }
+}
+
+void juggle() {
+  // eight colored dots, weaving in and out of sync with each other
+  fadeToBlackBy( leds, NUM_LEDS, 20);
+  byte dothue = 0;
+  for( int i = 0; i < 8; i++) {
+    leds[beatsin16( i+7, 0, NUM_LEDS-1 )] |= CHSV(dothue, 200, 255);
+    dothue += 32;
+  }
+}
+
+void wu() {
+  leds[3] = CRGB::Yellow;
+  leds[4] = CRGB::Yellow;
+  leds[5] = CRGB::Yellow;
+  leds[2] = CRGB::Yellow;
+  leds[25] = CRGB::Yellow;
+  leds[26] = CRGB::Yellow;
+  leds[27] = CRGB::Yellow;
+  leds[28] = CRGB::Yellow;
+  leds[29] = CRGB::Yellow;
+  leds[30] = CRGB::Yellow;
+  leds[4] = CRGB::Yellow;
+  leds[11] = CRGB::Yellow;
+  leds[20] = CRGB::Yellow;
+  leds[37] = CRGB::Yellow;
+  leds[41] = CRGB::Yellow;
+  leds[55] = CRGB::Yellow;
+  leds[36] = CRGB::Yellow;
+  leds[43] = CRGB::Yellow;
+  leds[52] = CRGB::Yellow;
+  leds[51] = CRGB::Yellow;
+  leds[50] = CRGB::Yellow;
+  leds[49] = CRGB::Yellow;
+  leds[48] = CRGB::Yellow;
+  leds[46] = CRGB::Yellow;
+  FastLED.show();
+}
+
+void black1() {
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[25] = CRGB::Black;
+  leds[26] = CRGB::Black;
+  leds[27] = CRGB::Black;
+  leds[28] = CRGB::Black;
+  leds[29] = CRGB::Black;
+  leds[30] = CRGB::Black;
+  leds[11] = CRGB::Black;
+  leds[20] = CRGB::Black;
+  leds[37] = CRGB::Black;
+  leds[41] = CRGB::Black;
+  leds[55] = CRGB::Black;
+  leds[36] = CRGB::Black;
+  leds[43] = CRGB::Black;
+  leds[52] = CRGB::Black;
+  leds[51] = CRGB::Black;
+  leds[50] = CRGB::Black;
+  leds[49] = CRGB::Black;
+  leds[48] = CRGB::Black;
+  leds[46] = CRGB::Black;
+  FastLED.show();
+}
+
+void jia() {
+  leds[4] = CRGB::Purple;
+  leds[10] = CRGB::Purple;
+  leds[22] = CRGB::Purple;
+  leds[24] = CRGB::Purple;
+  leds[25] = CRGB::Purple;
+  leds[38] = CRGB::Purple;
+  leds[41] = CRGB::Purple;
+  leds[54] = CRGB::Purple;
+  leds[57] = CRGB::Purple;
+  leds[2] = CRGB::Purple;
+  leds[12] = CRGB::Purple;
+  leds[20] = CRGB::Purple;
+  leds[14] = CRGB::Purple;
+  leds[16] = CRGB::Purple;
+  leds[19] = CRGB::Purple;
+  leds[28] = CRGB::Purple;
+  leds[35] = CRGB::Purple;
+  leds[44] = CRGB::Purple;
+  leds[51] = CRGB::Purple;
+  leds[60] = CRGB::Purple;
+  leds[17] = CRGB::Purple;
+  leds[30] = CRGB::Purple;
+  leds[33] = CRGB::Purple;
+  leds[46] = CRGB::Purple;
+  leds[49] = CRGB::Purple;
+  leds[62] = CRGB::Purple;
+  FastLED.show();
+}
+
+void black2() {
+  leds[4] = CRGB::Black;
+  leds[10] = CRGB::Black;
+  leds[22] = CRGB::Black;
+  leds[24] = CRGB::Black;
+  leds[25] = CRGB::Black;
+  leds[38] = CRGB::Black;
+  leds[41] = CRGB::Black;
+  leds[54] = CRGB::Black;
+  leds[57] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[12] = CRGB::Black;
+  leds[20] = CRGB::Black;
+  leds[14] = CRGB::Black;
+  leds[16] = CRGB::Black;
+  leds[19] = CRGB::Black;
+  leds[28] = CRGB::Black;
+  leds[35] = CRGB::Black;
+  leds[44] = CRGB::Black;
+  leds[51] = CRGB::Black;
+  leds[60] = CRGB::Black;
+  leds[17] = CRGB::Black;
+  leds[30] = CRGB::Black;
+  leds[33] = CRGB::Black;
+  leds[46] = CRGB::Black;
+  leds[49] = CRGB::Black;
+  leds[62] = CRGB::Black;
+  FastLED.show();
+}
+
+void zhi() {
+  leds[55] = CRGB::Pink;
+  leds[57] = CRGB::Pink;
+  leds[58] = CRGB::Pink;
+  leds[59] = CRGB::Pink;
+  leds[60] = CRGB::Pink;
+  leds[61] = CRGB::Pink;
+  leds[62] = CRGB::Pink;
+  leds[63] = CRGB::Pink;
+  leds[5] = CRGB::Pink;
+  leds[11] = CRGB::Pink;
+  leds[23] = CRGB::Pink;
+  leds[22] = CRGB::Pink;
+  leds[21] = CRGB::Pink;
+  leds[20] = CRGB::Pink;
+  leds[19] = CRGB::Pink;
+  leds[27] = CRGB::Pink;
+  leds[37] = CRGB::Pink;
+  leds[41] = CRGB::Pink;
+  FastLED.show();
+}
+
+void black3() {
+  leds[55] = CRGB::Black;
+  leds[57] = CRGB::Black;
+  leds[58] = CRGB::Black;
+  leds[59] = CRGB::Black;
+  leds[60] = CRGB::Black;
+  leds[61] = CRGB::Black;
+  leds[62] = CRGB::Black;
+  leds[63] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[11] = CRGB::Black;
+  leds[23] = CRGB::Black;
+  leds[22] = CRGB::Black;
+  leds[21] = CRGB::Black;
+  leds[20] = CRGB::Black;
+  leds[19] = CRGB::Black;
+  leds[27] = CRGB::Black;
+  leds[37] = CRGB::Black;
+  leds[41] = CRGB::Black;
+  FastLED.show();
+}
+
+void jie() {
+  leds[6] = CRGB::Blue;
+  leds[9] = CRGB::Blue;
+  leds[23] = CRGB::Blue;
+  leds[22] = CRGB::Blue;
+  leds[21] = CRGB::Blue;
+  leds[20] = CRGB::Blue;
+  leds[27] = CRGB::Blue;
+  leds[25] = CRGB::Blue;
+  leds[37] = CRGB::Blue;
+  leds[43] = CRGB::Blue;
+  leds[41] = CRGB::Blue;
+  leds[55] = CRGB::Blue;
+  leds[3] = CRGB::Blue;
+  leds[2] = CRGB::Blue;
+  leds[1] = CRGB::Blue;
+  leds[12] = CRGB::Blue;
+  leds[19] = CRGB::Blue;
+  leds[28] = CRGB::Blue;
+  leds[35] = CRGB::Blue;
+  leds[44] = CRGB::Blue;
+  leds[51] = CRGB::Blue;
+  leds[60] = CRGB::Blue;
+  leds[59] = CRGB::Blue;
+  leds[61] = CRGB::Blue;
+  leds[62] = CRGB::Blue;
+  leds[63] = CRGB::Blue;
+  leds[49] = CRGB::Blue;
+  leds[46] = CRGB::Blue;
+  leds[33] = CRGB::Blue;
+  leds[30] = CRGB::Blue;
+  leds[14] = CRGB::Blue;
+  leds[17] = CRGB::Blue;
+  leds[18] = CRGB::Blue;
+  leds[34] = CRGB::Blue;
+  FastLED.show();
+}
+
+void black4() {
+  leds[6] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  leds[23] = CRGB::Black;
+  leds[22] = CRGB::Black;
+  leds[21] = CRGB::Black;
+  leds[20] = CRGB::Black;
+  leds[27] = CRGB::Black;
+  leds[25] = CRGB::Black;
+  leds[37] = CRGB::Black;
+  leds[43] = CRGB::Black;
+  leds[41] = CRGB::Black;
+  leds[55] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[12] = CRGB::Black;
+  leds[19] = CRGB::Black;
+  leds[28] = CRGB::Black;
+  leds[35] = CRGB::Black;
+  leds[44] = CRGB::Black;
+  leds[51] = CRGB::Black;
+  leds[60] = CRGB::Black;
+  leds[59] = CRGB::Black;
+  leds[61] = CRGB::Black;
+  leds[62] = CRGB::Black;
+  leds[63] = CRGB::Black;
+  leds[49] = CRGB::Black;
+  leds[46] = CRGB::Black;
+  leds[33] = CRGB::Black;
+  leds[30] = CRGB::Black;
+  leds[14] = CRGB::Black;
+  leds[17] = CRGB::Black;
+  leds[18] = CRGB::Black;
+  leds[34] = CRGB::Black;
+  FastLED.show();
+}
+
+void advance(char a, char b)         //Move forward
+{
+  analogWrite (E1, a);     //PWM Speed Control
+  digitalWrite(M1, HIGH);
+  analogWrite (E2, b);
+  digitalWrite(M2, LOW);
+}
+void back_off (char a, char b)         //Move backward
+{
+  analogWrite (E1, a);
+  digitalWrite(M1, LOW);
+  analogWrite (E2, b);
+  digitalWrite(M2, HIGH);
+}
+void turn_L (char a, char b)            //Turn Left
+{
+  analogWrite (E1, a);
+  digitalWrite(M1, HIGH);
+  analogWrite (E2, b);
+  digitalWrite(M2, HIGH);
+}
+void turn_R (char a, char b)            //Turn Right
+{
+  analogWrite (E1, a);
+  digitalWrite(M1, LOW);
+  analogWrite (E2, b);
+  digitalWrite(M2, LOW);
+}
+
+
+void loop() {
+  currentMillis = millis();
+  if (currentMillis < 2000) {
+    Serial.println("1");
+    advance(255, 255);
+    wu();
+  }
+  else if ((2000 < currentMillis) && (currentMillis < 4000)) {
+    back_off(255, 255);
+    wu();
+  }
+  else if ((4000 < currentMillis) && (currentMillis < 6000)) {
+    turn_L(100, 150);
+    wu();
+  }
+  else if ((6000 < currentMillis) && (currentMillis < 8000)) {
+    turn_R(150, 100);
+    wu();
+  }
+  else if ((8000 < currentMillis) && (currentMillis < 8500)) {
+    black1();
+  }
+
+  else if ((8500 < currentMillis) && (currentMillis < 10500)) {
+    advance(255, 255);
+    jia();
+  }
+  else if ((10500 < currentMillis) && (currentMillis < 12500)) {
+    back_off(255, 255);
+    jia();
+  }
+  else if ((12500 < currentMillis) && (currentMillis < 14500)) {
+    turn_R(150, 100);
+    jia();
+  }
+  else if ((14500 < currentMillis) && (currentMillis < 16500)) {
+    turn_L(100, 150);
+    jia();
+  }
+  else if ((16500 < currentMillis) && (currentMillis < 17000)) {
+    black2();
+  }
+
+  else if ((17000 < currentMillis) && (currentMillis < 19000)) {
+    advance(255, 255);
+    zhi();
+  }
+  else if ((19000 < currentMillis) && (currentMillis < 21000)) {
+    back_off(255, 255);
+    zhi();
+  }
+  else if ((21000 < currentMillis) && (currentMillis < 23000)) {
+    turn_L(100, 150);
+    zhi();
+  }
+  else if ((23000 < currentMillis) && (currentMillis < 25000)) {
+    turn_R(150, 100);
+    zhi();
+  }
+  else if ((25000 < currentMillis) && (currentMillis < 25500)) {
+    black3();
+  }
+
+  else if ((25500 < currentMillis) && (currentMillis < 27500)) {
+    advance(255, 255);
+    jie();
+  }
+  else if ((27500 < currentMillis) && (currentMillis < 29500)) {
+    back_off(255, 255);
+    jie();
+  }
+  else if ((29500 < currentMillis) && (currentMillis < 31500)) {
+    turn_R(150, 100);
+    jie();
+  }
+  else if ((31500 < currentMillis) && (currentMillis < 33500)) {
+    turn_L(100, 150);
+    jie();
+  }
+  else if ((33500 < currentMillis) && (currentMillis < 35500)) {
+    turn_R(150, 100);
+    jie();
+  }
+  else if ((35500 < currentMillis) && (currentMillis < 35600)) {
+    black4();
+  }
+  //servo motors
+  else if ((35600 < currentMillis) && (currentMillis < 105000)) {
+    Serial.println("2");
+    myservo.attach(11);  // attaches the servo on pin 11 to the servo object
+    myservo2.attach(8);  // attaches the servo on pin 8 to the servo object
+    myservo3.attach(10);  // attaches the servo on pin 10 to the servo object
+    for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+      // in steps of 1 degree
+      myservo.write(pos);              // tell servo to go to position in variable 'pos'
+      myservo2.write(pos);
+      myservo3.write(pos);
+      delay(5);                       // waits 15ms for the servo to reach the position
+    }
+    for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+      myservo.write(pos);              // tell servo to go to position in variable 'pos'
+      myservo2.write(pos);
+      myservo3.write(pos);
+      delay(5);                       // waits 15ms for the servo to reach the position
+    }
+     gPatterns[gCurrentPatternNumber]();
+
+  // send the 'leds' array out to the actual LED strip
+  FastLED.show();  
+  // insert a delay to keep the framerate modest
+  FastLED.delay(1000/FRAMES_PER_SECOND); 
+
+  // do some periodic updates
+  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+  EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+  }
+//  else if ((76000 < currentMillis) && (currentMillis < 105000)) {
+//    myservo.attach(11);  // attaches the servo on pin 11 to the servo object
+//    myservo2.attach(8);  // attaches the servo on pin 8 to the servo object
+//    myservo3.attach(10);  // attaches the servo on pin 10 to the servo object
+//    for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+//      // in steps of 1 degree
+//      myservo.write(pos);              // tell servo to go to position in variable 'pos'
+//      myservo2.write(pos);
+//      myservo3.write(pos);
+//      delay(5);                       // waits 15ms for the servo to reach the position
+//    }
+//    for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+//      myservo.write(pos);              // tell servo to go to position in variable 'pos'
+//      myservo2.write(pos);
+//      myservo3.write(pos);
+//      delay(5);                       // waits 15ms for the servo to reach the position
+//    }
+//}
+}
+
